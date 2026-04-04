@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Investimentos{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Investimentos</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header mb-4">
+  <div>
+    <h4 class="page-title">Investimentos</h4>
+    <p class="page-subtitle text-muted">Acompanhe sua carteira de investimentos</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'core:investment-category-list' %}" class="btn btn-outline-secondary btn-sm">
+      <i data-lucide="tag" style="width:14px;height:14px;"></i> Categorias
+    </a>
+    <a href="{% url 'core:emergency-reserve' %}" class="btn btn-outline-warning btn-sm">
+      <i data-lucide="shield" style="width:14px;height:14px;"></i> Reserva
+    </a>
+    <a href="{% url 'core:investment-create' %}" class="btn btn-primary btn-sm">
+      <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo Investimento
+    </a>
+  </div>
+</div>
+
+<!-- Cards de totais -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--income">
+      <div class="summary-card__icon"><i data-lucide="landmark"></i></div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Renda Fixa</span>
+        <span class="summary-card__value">R$ {{ fixed_total|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--invest">
+      <div class="summary-card__icon"><i data-lucide="trending-up"></i></div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Renda Variável</span>
+        <span class="summary-card__value">R$ {{ variable_total|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--positive">
+      <div class="summary-card__icon"><i data-lucide="shield"></i></div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Reserva</span>
+        <span class="summary-card__value">R$ {{ reserve_total|floatformat:2 }}</span>
+        {% if reserve %}
+        <span class="summary-card__sub">Meta: R$ {{ reserve.target_amount|floatformat:2 }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--income" style="border-color: var(--color-primary);">
+      <div class="summary-card__icon"><i data-lucide="wallet"></i></div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Patrimônio Total</span>
+        <span class="summary-card__value">R$ {{ grand_total|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtro por tipo -->
+<div class="filter-bar mb-3">
+  <div class="btn-group" role="group">
+    <a href="{% url 'core:investment-list' %}" class="btn btn-sm {% if not request.GET.type %}btn-primary{% else %}btn-outline-primary{% endif %}">Todos</a>
+    <a href="?type=fixed" class="btn btn-sm {% if request.GET.type == 'fixed' %}btn-primary{% else %}btn-outline-primary{% endif %}">Renda Fixa</a>
+    <a href="?type=variable" class="btn btn-sm {% if request.GET.type == 'variable' %}btn-primary{% else %}btn-outline-primary{% endif %}">Renda Variável</a>
+    <a href="?type=reserve" class="btn btn-sm {% if request.GET.type == 'reserve' %}btn-primary{% else %}btn-outline-primary{% endif %}">Reserva</a>
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="chart-card p-0">
+  <div class="table-responsive">
+    <table class="table table-hover data-table mb-0">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Descrição</th>
+          <th>Categoria</th>
+          <th>Tipo</th>
+          <th class="text-end">Aplicado</th>
+          <th class="text-end">Atual</th>
+          <th class="text-end">Ganho/Perda</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in investments %}
+        <tr>
+          <td class="text-nowrap">{{ inv.date|date:"d/m/Y" }}</td>
+          <td>{{ inv.description }}</td>
+          <td>
+            <span class="badge-category">
+              <i data-lucide="{{ inv.category.icon }}" style="width:12px;height:12px;"></i>
+              {{ inv.category.name }}
+            </span>
+          </td>
+          <td>
+            {% if inv.category.investment_type == 'fixed' %}
+            <span class="badge bg-primary-subtle text-primary">Renda Fixa</span>
+            {% elif inv.category.investment_type == 'variable' %}
+            <span class="badge bg-warning-subtle text-warning">Renda Variável</span>
+            {% else %}
+            <span class="badge bg-success-subtle text-success">Reserva</span>
+            {% endif %}
+          </td>
+          <td class="text-end">R$ {{ inv.amount|floatformat:2 }}</td>
+          <td class="text-end fw-semibold">R$ {{ inv.effective_value|floatformat:2 }}</td>
+          <td class="text-end {% if inv.gain_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+            {% if inv.gain_loss >= 0 %}+{% endif %}R$ {{ inv.gain_loss|floatformat:2 }}
+            <small>({% if inv.gain_loss >= 0 %}+{% endif %}{{ inv.gain_loss_pct|floatformat:1 }}%)</small>
+          </td>
+          <td class="text-end">
+            <a href="{% url 'core:investment-update' inv.pk %}" class="btn-icon btn-icon--edit">
+              <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+            </a>
+            <a href="{% url 'core:investment-delete' inv.pk %}" class="btn-icon btn-icon--delete">
+              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <i data-lucide="bar-chart-2" style="width:40px;height:40px;opacity:.2;"></i>
+            <p class="mt-3 text-muted">Nenhum investimento registrado.</p>
+            <a href="{% url 'core:investment-create' %}" class="btn btn-primary btn-sm">Registrar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if investments.has_other_pages %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm justify-content-center">
+    {% if investments.has_previous %}
+    <li class="page-item"><a class="page-link" href="?page={{ investments.previous_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Anterior</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ investments.number }} / {{ investments.paginator.num_pages }}</span></li>
+    {% if investments.has_next %}
+    <li class="page-item"><a class="page-link" href="?page={{ investments.next_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Próxima</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

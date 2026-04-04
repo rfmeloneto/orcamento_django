@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Reserva de Emergência{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:investment-list' %}">Investimentos</a></li>
+<li class="breadcrumb-item active">Reserva de Emergência</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h4 class="page-title">
+    <i data-lucide="shield" style="width:22px;height:22px;color:var(--color-primary);"></i>
+    Reserva de Emergência
+  </h4>
+</div>
+
+<div class="row g-4">
+  <!-- Formulário -->
+  <div class="col-12 col-md-5">
+    <div class="chart-card h-100">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">Atualizar Reserva</h6>
+      </div>
+      <div class="chart-card__body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form|crispy }}
+          <button type="submit" class="btn btn-primary w-100 mt-2">
+            <i data-lucide="save" style="width:14px;height:14px;"></i> Salvar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visualização -->
+  <div class="col-12 col-md-7">
+    <div class="chart-card h-100 d-flex flex-column align-items-center justify-content-center text-center p-4">
+      {% if reserve.target_amount %}
+
+      <div class="reserve-circle-lg mb-4">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <circle cx="100" cy="100" r="85" fill="none" stroke="var(--color-border)" stroke-width="14" />
+          <circle cx="100" cy="100" r="85" fill="none"
+                  stroke="{% if reserve.progress_pct >= 100 %}var(--color-success){% elif reserve.progress_pct >= 60 %}var(--color-primary){% else %}var(--color-warning){% endif %}"
+                  stroke-width="14"
+                  stroke-linecap="round"
+                  stroke-dasharray="{{ reserve.progress_pct|floatformat:0 }} 100"
+                  pathLength="100"
+                  transform="rotate(-90 100 100)" />
+        </svg>
+        <div class="reserve-center-text-lg">
+          <span class="display-5 fw-bold">{{ reserve.progress_pct|floatformat:0 }}%</span>
+          <span class="text-muted">concluído</span>
+        </div>
+      </div>
+
+      <div class="row w-100 g-3 text-start">
+        <div class="col-4">
+          <div class="reserve-stat">
+            <span class="reserve-stat__label">Atual</span>
+            <span class="reserve-stat__value text-success">R$ {{ reserve.current_amount|floatformat:2 }}</span>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="reserve-stat">
+            <span class="reserve-stat__label">Meta</span>
+            <span class="reserve-stat__value">R$ {{ reserve.target_amount|floatformat:2 }}</span>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="reserve-stat">
+            <span class="reserve-stat__label">Falta</span>
+            <span class="reserve-stat__value text-warning">R$ {{ reserve.remaining|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      {% if reserve.notes %}
+      <div class="alert alert-info mt-3 text-start w-100">
+        <small>{{ reserve.notes }}</small>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state">
+        <i data-lucide="shield" style="width:60px;height:60px;opacity:.2;"></i>
+        <p class="mt-3 text-muted">
+          Configure a meta da sua reserva de emergência.<br/>
+          Recomenda-se de 3 a 6 meses de gastos.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

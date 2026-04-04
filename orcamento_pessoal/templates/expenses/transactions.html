@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Transações — {{ month }}/{{ year }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Transações</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header mb-4">
+  <div>
+    <h4 class="page-title">Transações</h4>
+    <p class="page-subtitle text-muted">Registro de todos os gastos do período</p>
+  </div>
+  <a href="{% url 'core:transaction-create' %}" class="btn btn-primary btn-sm">
+    <i data-lucide="plus" style="width:14px;height:14px;"></i> Nova Transação
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="filter-bar mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label form-label-sm">Mês</label>
+      <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="1"  {% if month == 1  %}selected{% endif %}>Janeiro</option>
+        <option value="2"  {% if month == 2  %}selected{% endif %}>Fevereiro</option>
+        <option value="3"  {% if month == 3  %}selected{% endif %}>Março</option>
+        <option value="4"  {% if month == 4  %}selected{% endif %}>Abril</option>
+        <option value="5"  {% if month == 5  %}selected{% endif %}>Maio</option>
+        <option value="6"  {% if month == 6  %}selected{% endif %}>Junho</option>
+        <option value="7"  {% if month == 7  %}selected{% endif %}>Julho</option>
+        <option value="8"  {% if month == 8  %}selected{% endif %}>Agosto</option>
+        <option value="9"  {% if month == 9  %}selected{% endif %}>Setembro</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>Outubro</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>Novembro</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>Dezembro</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label form-label-sm">Ano</label>
+      <input type="number" name="year" class="form-control form-control-sm"
+             style="width:90px;" value="{{ year }}" min="2000" max="2100"
+             onchange="this.form.submit()" />
+    </div>
+    <div class="col-auto">
+      <label class="form-label form-label-sm">Grupo</label>
+      <select name="group" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">Todos os grupos</option>
+        {% for g in groups %}
+        <option value="{{ g.pk }}" {% if selected_group == g.pk|stringformat:"i" %}selected{% endif %}
+                style="color:{{ g.color }};">{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <a href="{% url 'core:transaction-list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+    </div>
+  </form>
+</div>
+
+<!-- Total -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <span class="text-muted small">{{ transactions.paginator.count }} transação(ões)</span>
+  <div class="total-badge total-badge--expense">
+    Total: R$ {{ total|floatformat:2 }}
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="chart-card p-0">
+  <div class="table-responsive">
+    <table class="table table-hover data-table mb-0">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Descrição</th>
+          <th>Grupo</th>
+          <th>Subgrupo</th>
+          <th>Item</th>
+          <th>Pagamento</th>
+          <th class="text-end">Valor</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transactions %}
+        <tr>
+          <td class="text-nowrap">{{ t.date|date:"d/m/Y" }}</td>
+          <td>
+            {{ t.description }}
+            {% if t.is_recurring %}
+            <span class="ms-1" title="Gasto Recorrente">
+              <i data-lucide="repeat" style="width:12px;height:12px;color:var(--color-primary);"></i>
+            </span>
+            {% endif %}
+            {% if t.notes %}
+            <span class="ms-1" title="{{ t.notes }}">
+              <i data-lucide="info" style="width:12px;height:12px;color:var(--color-muted);"></i>
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge-category" style="color:{{ t.group.color }}; border-color:{{ t.group.color }}20; background:{{ t.group.color }}15;">
+              {{ t.group.name }}
+            </span>
+          </td>
+          <td class="text-muted small">{{ t.subgroup.name }}</td>
+          <td class="text-muted small">{{ t.item.name }}</td>
+          <td>
+            <span class="badge bg-light text-dark">{{ t.get_payment_method_display }}</span>
+          </td>
+          <td class="text-end fw-semibold text-danger">R$ {{ t.amount|floatformat:2 }}</td>
+          <td class="text-end">
+            <a href="{% url 'core:transaction-update' t.pk %}" class="btn-icon btn-icon--edit">
+              <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+            </a>
+            <a href="{% url 'core:transaction-delete' t.pk %}" class="btn-icon btn-icon--delete">
+              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <i data-lucide="receipt" style="width:40px;height:40px;opacity:.2;"></i>
+            <p class="mt-3 text-muted">Nenhuma transação neste período.</p>
+            <a href="{% url 'core:transaction-create' %}" class="btn btn-primary btn-sm">Registrar Gasto</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if transactions.has_other_pages %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm justify-content-center">
+    {% if transactions.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ transactions.previous_page_number }}&month={{ month }}&year={{ year }}{% if selected_group %}&group={{ selected_group }}{% endif %}">Anterior</a>
+    </li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">{{ transactions.number }} / {{ transactions.paginator.num_pages }}</span>
+    </li>
+    {% if transactions.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ transactions.next_page_number }}&month={{ month }}&year={{ year }}{% if selected_group %}&group={{ selected_group }}{% endif %}">Próxima</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

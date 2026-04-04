@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Meu Perfil{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Perfil</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h4 class="page-title">Meu Perfil</h4>
+</div>
+
+<div class="row g-4">
+  <!-- Formulário de perfil -->
+  <div class="col-12 col-md-7">
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title"><i data-lucide="user-circle"></i> Dados Pessoais</h6>
+      </div>
+      <div class="chart-card__body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form|crispy }}
+          <button type="submit" class="btn btn-primary mt-2">
+            <i data-lucide="save" style="width:14px;height:14px;"></i> Salvar Alterações
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumo rápido -->
+  <div class="col-12 col-md-5">
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title"><i data-lucide="info"></i> Resumo da Conta</h6>
+      </div>
+      <div class="chart-card__body">
+        <dl class="profile-dl">
+          <dt>Usuário</dt>
+          <dd>{{ request.user.username }}</dd>
+
+          <dt>Membro desde</dt>
+          <dd>{{ request.user.date_joined|date:"d/m/Y" }}</dd>
+
+          <dt>Último acesso</dt>
+          <dd>{{ request.user.last_login|date:"d/m/Y H:i" }}</dd>
+
+          <dt>Renda mensal esperada</dt>
+          <dd class="text-success fw-semibold">
+            {{ profile.currency_symbol }} {{ profile.monthly_income_target|floatformat:2 }}
+          </dd>
+        </dl>
+
+        <hr />
+
+        <div class="d-flex flex-column gap-2">
+          <a href="{% url 'core:income-category-list' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="tag" style="width:14px;height:14px;"></i> Categorias de Receita
+          </a>
+          <a href="{% url 'core:investment-category-list' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="bar-chart-2" style="width:14px;height:14px;"></i> Categorias de Investimento
+          </a>
+          <a href="{% url 'core:expense-structure' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="layers" style="width:14px;height:14px;"></i> Estrutura de Gastos
+          </a>
+          <a href="/admin/" class="btn btn-outline-dark btn-sm" target="_blank">
+            <i data-lucide="settings" style="width:14px;height:14px;"></i> Painel Admin
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

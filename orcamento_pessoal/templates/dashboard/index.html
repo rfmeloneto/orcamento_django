@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard — {{ month_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== CARDS DE RESUMO ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Receita -->
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--income">
+      <div class="summary-card__icon">
+        <i data-lucide="trending-up"></i>
+      </div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Receita</span>
+        <span class="summary-card__value">R$ {{ income_total|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gastos -->
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--expense">
+      <div class="summary-card__icon">
+        <i data-lucide="trending-down"></i>
+      </div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Gastos</span>
+        <span class="summary-card__value">R$ {{ expense_total|floatformat:2 }}</span>
+        <span class="summary-card__sub">{{ expense_pct|floatformat:1 }}% da renda</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Investimentos -->
+  <div class="col-6 col-md-3">
+    <div class="summary-card summary-card--invest">
+      <div class="summary-card__icon">
+        <i data-lucide="bar-chart-2"></i>
+      </div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Investido</span>
+        <span class="summary-card__value">R$ {{ investment_total|floatformat:2 }}</span>
+        <span class="summary-card__sub">Patrimônio: R$ {{ total_invested|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saldo -->
+  <div class="col-6 col-md-3">
+    <div class="summary-card {% if balance >= 0 %}summary-card--positive{% else %}summary-card--negative{% endif %}">
+      <div class="summary-card__icon">
+        <i data-lucide="{% if balance >= 0 %}smile{% else %}alert-triangle{% endif %}"></i>
+      </div>
+      <div class="summary-card__body">
+        <span class="summary-card__label">Saldo</span>
+        <span class="summary-card__value">R$ {{ balance|floatformat:2 }}</span>
+        <span class="summary-card__sub">Receita - Gastos - Investido</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== LINHA DE GRÁFICOS ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Gráfico Donut: Distribuição por Grupo -->
+  <div class="col-12 col-lg-4">
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">
+          <i data-lucide="pie-chart"></i>
+          Gastos por Grupo
+        </h6>
+      </div>
+      <div class="chart-card__body">
+        <canvas id="donutChart" height="260"></canvas>
+        <div id="donutLegend" class="chart-legend mt-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de Barras: Comparativo Mensal -->
+  <div class="col-12 col-lg-8">
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">
+          <i data-lucide="bar-chart"></i>
+          Receita vs. Gastos (6 meses)
+        </h6>
+      </div>
+      <div class="chart-card__body">
+        <canvas id="barChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== LINHA: PATRIMÔNIO + GRUPOS ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Gráfico de Linha: Evolução do Patrimônio -->
+  <div class="col-12 col-lg-7">
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">
+          <i data-lucide="activity"></i>
+          Evolução do Patrimônio (12 meses)
+        </h6>
+      </div>
+      <div class="chart-card__body">
+        <canvas id="lineChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grupos com barra de progresso -->
+  <div class="col-12 col-lg-5">
+    <div class="chart-card h-100">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">
+          <i data-lucide="layers"></i>
+          Orçamento por Grupo
+        </h6>
+      </div>
+      <div class="chart-card__body p-0">
+        <div class="groups-list">
+          {% for gd in groups_data %}
+          <div class="group-budget-item">
+            <div class="group-budget-header">
+              <div class="group-budget-name">
+                <span class="group-dot" style="background:{{ gd.group.color }}"></span>
+                {{ gd.group.name }}
+              </div>
+              <div class="group-budget-values">
+                <span class="spent">R$ {{ gd.spent|floatformat:2 }}</span>
+                <span class="separator">/</span>
+                <span class="budget">R$ {{ gd.budget_amount|floatformat:2 }}</span>
+              </div>
+            </div>
+            <div class="progress group-progress">
+              <div class="progress-bar {% if gd.pct_used > 100 %}bg-danger{% elif gd.pct_used > 85 %}bg-warning{% else %}bg-success{% endif %}"
+                   role="progressbar"
+                   style="width: {{ gd.pct_used|floatformat:0 }}%; background-color: {{ gd.group.color }} !important;"
+                   aria-valuenow="{{ gd.pct_used|floatformat:0 }}"
+                   aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+            <div class="group-budget-footer">
+              <span class="target">Meta: {{ gd.group.target_percentage }}%</span>
+              <span class="deviation {% if gd.deviation > 0 %}text-danger{% else %}text-success{% endif %}">
+                {% if gd.deviation > 0 %}+{% endif %}R$ {{ gd.deviation|floatformat:2 }}
+              </span>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state p-4">
+            <i data-lucide="layers" style="width:32px;height:32px;opacity:.3;"></i>
+            <p class="mt-2 mb-0">Nenhum grupo cadastrado.</p>
+            <a href="{% url 'core:expense-structure' %}" class="btn btn-sm btn-outline-primary mt-2">
+              Configurar Categorias
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== LINHA: METAS + RESERVA ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Metas Financeiras -->
+  <div class="col-12 col-lg-7">
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">
+          <i data-lucide="target"></i>
+          Metas em Andamento
+        </h6>
+        <a href="{% url 'core:goal-list' %}" class="btn btn-sm btn-ghost">Ver todas</a>
+      </div>
+      <div class="chart-card__body p-0">
+        {% for goal in goals %}
+        <div class="goal-item">
+          <div class="goal-item__header">
+            <div class="goal-item__title">
+              <span class="goal-term-badge goal-term-badge--{{ goal.term }}">
+                {{ goal.get_term_display }}
+              </span>
+              <strong>{{ goal.name }}</strong>
+            </div>
+            <div class="goal-item__amounts">
+              <span>R$ {{ goal.current_amount|floatformat:2 }}</span>
+              <span class="text-muted"> / R$ {{ goal.target_amount|floatformat:2 }}</span>
+            </div>
+          </div>
+          <div class="progress goal-progress mb-1">
+            <div class="progress-bar progress-bar-striped"
+                 role="progressbar"
+                 style="width: {{ goal.progress_pct|floatformat:0 }}%"
+                 aria-valuenow="{{ goal.progress_pct|floatformat:0 }}"
+                 aria-valuemin="0" aria-valuemax="100">
+              {{ goal.progress_pct|floatformat:0 }}%
+            </div>
+          </div>
+          <div class="goal-item__footer">
+            <span class="text-muted small">Falta: R$ {{ goal.remaining|floatformat:2 }}</span>
+            {% if goal.monthly_needed %}
+            <span class="text-muted small">≈ R$ {{ goal.monthly_needed|floatformat:2 }}/mês</span>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state p-4">
+          <i data-lucide="target" style="width:32px;height:32px;opacity:.3;"></i>
+          <p class="mt-2 mb-0">Nenhuma meta cadastrada.</p>
+          <a href="{% url 'core:goal-create' %}" class="btn btn-sm btn-outline-primary mt-2">
+            Criar Meta
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Reserva de Emergência -->
+  <div class="col-12 col-lg-5">
+    <div class="chart-card h-100">
+      <div class="chart-card__header">
+        <h6 class="chart-card__title">
+          <i data-lucide="shield"></i>
+          Reserva de Emergência
+        </h6>
+        <a href="{% url 'core:emergency-reserve' %}" class="btn btn-sm btn-ghost">Editar</a>
+      </div>
+      <div class="chart-card__body d-flex flex-column align-items-center justify-content-center text-center">
+        {% if reserve %}
+        <div class="reserve-circle mb-3">
+          <svg viewBox="0 0 120 120" class="reserve-svg">
+            <circle cx="60" cy="60" r="52" class="reserve-track" />
+            <circle cx="60" cy="60" r="52" class="reserve-fill"
+                    stroke-dasharray="{{ reserve.progress_pct|floatformat:0 }} 100"
+                    stroke-dashoffset="25"
+                    pathLength="100" />
+          </svg>
+          <div class="reserve-center-text">
+            <span class="reserve-pct">{{ reserve.progress_pct|floatformat:0 }}%</span>
+            <span class="reserve-label">Atingido</span>
+          </div>
+        </div>
+        <div class="reserve-values">
+          <div class="reserve-row">
+            <span>Atual:</span>
+            <strong class="text-success">R$ {{ reserve.current_amount|floatformat:2 }}</strong>
+          </div>
+          <div class="reserve-row">
+            <span>Meta:</span>
+            <strong>R$ {{ reserve.target_amount|floatformat:2 }}</strong>
+          </div>
+          <div class="reserve-row">
+            <span>Falta:</span>
+            <strong class="text-warning">R$ {{ reserve.remaining|floatformat:2 }}</strong>
+          </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i data-lucide="shield" style="width:40px;height:40px;opacity:.3;"></i>
+          <p class="mt-2">Configure sua reserva de emergência.</p>
+          <a href="{% url 'core:emergency-reserve' %}" class="btn btn-outline-primary btn-sm">
+            Configurar
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+  // Passa o período atual para o JS de gráficos
+  const CURRENT_YEAR  = {{ year }};
+  const CURRENT_MONTH = {{ month }};
+  initDashboardCharts(CURRENT_YEAR, CURRENT_MONTH);
+</script>
+{% endblock %}

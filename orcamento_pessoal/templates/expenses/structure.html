@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Estrutura de Categorias{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Categorias de Gastos</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header mb-4">
+  <div>
+    <h4 class="page-title">Estrutura de Categorias</h4>
+    <p class="page-subtitle text-muted">Gerencie a hierarquia: Grupo → Subgrupo → Item</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'core:expense-group-create' %}" class="btn btn-outline-primary btn-sm">
+      <i data-lucide="folder-plus" style="width:14px;height:14px;"></i> Novo Grupo
+    </a>
+    <a href="{% url 'core:expense-subgroup-create' %}" class="btn btn-outline-secondary btn-sm">
+      <i data-lucide="tag" style="width:14px;height:14px;"></i> Novo Subgrupo
+    </a>
+    <a href="{% url 'core:expense-item-create' %}" class="btn btn-outline-secondary btn-sm">
+      <i data-lucide="plus-circle" style="width:14px;height:14px;"></i> Novo Item
+    </a>
+  </div>
+</div>
+
+<div class="accordion structure-accordion" id="groupsAccordion">
+  {% for group in groups %}
+  <div class="accordion-item structure-group mb-3" style="--group-color: {{ group.color }};">
+    <h2 class="accordion-header">
+      <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} structure-group-btn"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#group-{{ group.pk }}"
+              aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+        <div class="structure-group-info">
+          <span class="structure-group-dot" style="background:{{ group.color }};"></span>
+          <i data-lucide="{{ group.icon }}" style="width:18px;height:18px;"></i>
+          <strong>{{ group.name }}</strong>
+          <span class="badge bg-light text-dark ms-2">{{ group.target_percentage }}% do orçamento</span>
+        </div>
+        <div class="structure-group-actions ms-auto me-3">
+          <a href="{% url 'core:expense-group-update' group.pk %}" class="btn-icon btn-icon--edit" onclick="event.stopPropagation()">
+            <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+          </a>
+          <a href="{% url 'core:expense-group-delete' group.pk %}" class="btn-icon btn-icon--delete" onclick="event.stopPropagation()">
+            <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+          </a>
+        </div>
+      </button>
+    </h2>
+
+    <div id="group-{{ group.pk }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}">
+      <div class="accordion-body p-0">
+        {% for subgroup in group.subgroups.all %}
+        <div class="structure-subgroup">
+          <div class="structure-subgroup-header">
+            <i data-lucide="{{ subgroup.icon }}" style="width:15px;height:15px;color:var(--color-muted);"></i>
+            <span class="structure-subgroup-name">{{ subgroup.name }}</span>
+            <div class="ms-auto d-flex gap-1">
+              <a href="{% url 'core:expense-subgroup-update' subgroup.pk %}" class="btn-icon btn-icon--edit">
+                <i data-lucide="pencil" style="width:12px;height:12px;"></i>
+              </a>
+              <a href="{% url 'core:expense-subgroup-delete' subgroup.pk %}" class="btn-icon btn-icon--delete">
+                <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="structure-items-wrap">
+            {% for item in subgroup.items.all %}
+            <div class="structure-item">
+              <span class="structure-item-dot"></span>
+              <span class="structure-item-name">{{ item.name }}</span>
+              <div class="ms-auto d-flex gap-1">
+                <a href="{% url 'core:expense-item-update' item.pk %}" class="btn-icon btn-icon--edit" style="padding:2px 4px;">
+                  <i data-lucide="pencil" style="width:11px;height:11px;"></i>
+                </a>
+                <a href="{% url 'core:expense-item-delete' item.pk %}" class="btn-icon btn-icon--delete" style="padding:2px 4px;">
+                  <i data-lucide="trash-2" style="width:11px;height:11px;"></i>
+                </a>
+              </div>
+            </div>
+            {% empty %}
+            <span class="text-muted small ps-3">Nenhum item cadastrado.</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="p-4 text-muted text-center">
+          <p>Nenhum subgrupo neste grupo.</p>
+          <a href="{% url 'core:expense-subgroup-create' %}" class="btn btn-outline-secondary btn-sm">Adicionar Subgrupo</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state text-center py-5">
+    <i data-lucide="layers" style="width:60px;height:60px;opacity:.2;"></i>
+    <h5 class="mt-3 text-muted">Nenhum grupo cadastrado</h5>
+    <a href="{% url 'core:expense-group-create' %}" class="btn btn-primary">Criar Grupo</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

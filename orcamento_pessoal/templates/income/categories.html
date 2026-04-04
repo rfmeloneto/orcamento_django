@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Categorias de Receita{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:income-list' %}">Receitas</a></li>
+<li class="breadcrumb-item active">Categorias</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h4 class="page-title">Categorias de Receita</h4>
+  <a href="{% url 'core:income-category-create' %}" class="btn btn-primary btn-sm">
+    <i data-lucide="plus" style="width:14px;height:14px;"></i> Nova Categoria
+  </a>
+</div>
+
+<div class="chart-card p-0">
+  <div class="table-responsive">
+    <table class="table data-table mb-0">
+      <thead>
+        <tr>
+          <th>Ícone</th>
+          <th>Nome</th>
+          <th>Status</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td><i data-lucide="{{ cat.icon }}" style="width:18px;height:18px;"></i></td>
+          <td>{{ cat.name }}</td>
+          <td>
+            {% if cat.is_active %}
+            <span class="badge bg-success-subtle text-success">Ativo</span>
+            {% else %}
+            <span class="badge bg-secondary-subtle text-secondary">Inativo</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'core:income-category-update' cat.pk %}" class="btn-icon btn-icon--edit">
+              <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+            </a>
+            <a href="{% url 'core:income-category-delete' cat.pk %}" class="btn-icon btn-icon--delete">
+              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center py-4 text-muted">Nenhuma categoria cadastrada.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
