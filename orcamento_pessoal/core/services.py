@@ -67,25 +67,56 @@ def project_recurring(transaction: Transaction) -> int:
         proj_date = datetime.date(year, month, day)
 
         # Upsert: atualiza projetada existente ou cria nova
-        Transaction.objects.update_or_create(
+        existing = Transaction.objects.filter(
             user=user,
             item=item,
             date__year=year,
             date__month=month,
             is_projected=True,
-            defaults={
-                'date':           proj_date,
-                'amount':         amount,
-                'description':    description,
-                'payment_method': payment,
-                'notes':          notes,
-                'is_recurring':   True,
-                'is_projected':   True,
-            },
-        )
+        ).first()
+
+        if existing:
+            existing.date           = proj_date
+            existing.amount         = amount
+            existing.description    = description
+            existing.payment_method = payment
+            existing.notes          = notes
+            existing.is_recurring   = True
+            existing.save()
+        else:
+            Transaction.objects.create(
+                user=user,
+                item=item,
+                date=proj_date,
+                amount=amount,
+                description=description,
+                payment_method=payment,
+                notes=notes,
+                is_recurring=True,
+                is_projected=True,
+            )
         projected_count += 1
 
     return projected_count
+
+
+def delete_projections(transaction: Transaction) -> int:
+    """
+    Remove todas as projeções automáticas (is_projected=True) do mesmo item
+    nos meses iguais ou posteriores à data da transação informada, dentro do mesmo ano.
+
+    Chamado quando o usuário desmarca is_recurring em uma transação real.
+    Retorna o número de registros deletados.
+    """
+    source_date = transaction.date
+    deleted, _ = Transaction.objects.filter(
+        user=transaction.user,
+        item=transaction.item,
+        date__year=source_date.year,
+        date__month__gt=source_date.month,
+        is_projected=True,
+    ).delete()
+    return deleted
 
 
 def reproject_from_source(item, user, from_date: datetime.date) -> None:

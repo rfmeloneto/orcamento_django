@@ -13,8 +13,16 @@ from .models import (
 
 
 class DateInput(forms.DateInput):
-    """Widget com type=date para melhor UX em browsers modernos."""
+    """Widget com type=date para melhor UX em browsers modernos.
+
+    Força o formato ISO 8601 (YYYY-MM-DD) no atributo value do input,
+    independente da localização configurada no Django (USE_L10N).
+    O navegador exige exatamente este formato para renderizar a data corretamente.
+    """
     input_type = 'date'
+
+    def __init__(self, attrs=None, format='%Y-%m-%d'):   # noqa: A002
+        super().__init__(attrs=attrs, format=format)
 
 
 # ---------------------------------------------------------------------------
