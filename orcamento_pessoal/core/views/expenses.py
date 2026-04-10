@@ -267,7 +267,7 @@ class TransactionListView(LoginRequiredMixin, ListView):
     model = Transaction
     template_name = 'expenses/transactions.html'
     context_object_name = 'transactions'
-    paginate_by = 25
+    #paginate_by = 25
 
     def get_queryset(self):
         user = self.request.user
